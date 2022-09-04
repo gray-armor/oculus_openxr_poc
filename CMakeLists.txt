@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 add_definitions(-DXR_USE_PLATFORM_ANDROID)
+add_definitions(-DXR_USE_GRAPHICS_API_OPENGL_ES)
 
 find_library(ANDROID_LIBRARY NAMES android)
 find_library(ANDROID_LOG_LIBRARY NAMES log)
@@ -21,14 +22,20 @@ set_property(
 add_library(
         oculus_openxr_poc MODULE
         main.cpp
+        graphicsplugin_opengles.cpp
+        platformplugin_android.cpp
+        program.cpp
         $<TARGET_OBJECTS:android_native_app_glue>
 )
+
+find_package(Vulkan REQUIRED)
 
 target_link_libraries(
         oculus_openxr_poc
         openxr_loader
         ${ANDROID_LIBRARY}
         ${ANDROID_LOG_LIBRARY}
+        ${Vulkan_LIBRARY}
 )
 
 target_include_directories(

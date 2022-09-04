@@ -1,18 +1,26 @@
-#include <android/log.h>
-#include <android_native_app_glue.h>
-#include <openxr/openxr.h>
-#include <openxr/openxr_platform.h>
+#include "pch.h"
 
 #include <exception>
 #include <memory>
 
-#define LOG_INFO(...) __android_log_print(ANDROID_LOG_INFO, "oculus_openxr_poc", __VA_ARGS__)
-#define LOG_ERROR(...) __android_log_print(ANDROID_LOG_ERROR, "oculus_openxr_poc", __VA_ARGS__)
+#include "graphicsplugin.h"
+#include "platformdata.h"
+#include "platformplugin.h"
+#include "program.h"
+#include "log.h"
 
 void android_main(struct android_app *app) {
   try {
     JNIEnv *Env;
     app->activity->vm->AttachCurrentThread(&Env, nullptr);
+
+    auto data = std::make_shared<PlatformData>();
+    data->applicationVM = app->activity->vm;
+    data->applicationActivity = app->activity->clazz;
+
+    auto platformPlugin = CreatePlatformPlugin(data);
+    auto graphicsPlugin = CreateGraphicsPlugin();
+    auto program = CreateOpenXrProgram(graphicsPlugin, platformPlugin);
 
     PFN_xrInitializeLoaderKHR initializeLoader = nullptr;
     if (XR_SUCCEEDED(xrGetInstanceProcAddr(XR_NULL_HANDLE,
@@ -26,6 +34,8 @@ void android_main(struct android_app *app) {
       loaderInitInfoAndroid.applicationContext = app->activity->clazz;
       initializeLoader((const XrLoaderInitInfoBaseHeaderKHR*)&loaderInitInfoAndroid);
     }
+
+    program->CreateInstance();
 
     while(true) {
       for (;;) {
